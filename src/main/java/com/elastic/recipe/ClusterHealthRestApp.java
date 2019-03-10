@@ -1,31 +1,41 @@
 package com.elastic.recipe;
 
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.apache.http.HttpHost;
+import org.apache.http.client.config.RequestConfig;
+import org.elasticsearch.action.main.MainResponse;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public class ClusterHealthRestApp {
 
-    public static void main(String[] args) throws UnknownHostException {
+    public static void main(String[] args) throws Exception {
 
-        TransportClient client = null;
+        RestHighLevelClient client = null;
 
         try {
-            // create client for localhost es
-            client = new PreBuiltTransportClient(Settings.EMPTY)
-                    .addTransportAddress(new TransportAddress(InetAddress.getByName("34.85.93.243"), 9300));
 
-            ClusterHealthResponse clusterHealthResponse =
-                    client.admin().cluster().health(new ClusterHealthRequest()).actionGet();
+            RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
+//            RestClientBuilder builder = RestClient.builder(new HttpHost("34.85.93.243", 9200, "http"));
+            builder.setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
+                @Override
+                public RequestConfig.Builder customizeRequestConfig(RequestConfig.Builder requestConfigBuilder) {
+                    return requestConfigBuilder.setSocketTimeout(-1).setConnectionRequestTimeout(-1);
+                }
+            });
 
-            System.out.println(clusterHealthResponse.getStatus().name());
+//            RestClient.builder(
+//                    new HttpHost("34.85.93.243", 9200, "http"));
+
+            client = new RestHighLevelClient(builder);
+
+
+            MainResponse response = client.info();
+
+
+            System.out.println("cluster version=" + response.getVersion());
 
         } catch (IOException e) {
             throw e;
